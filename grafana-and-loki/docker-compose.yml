@@ -9,6 +9,8 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - loki
+    volumes:
+      - loki_data:/loki
 
   promtail:
     image: grafana/promtail:latest
@@ -35,7 +37,7 @@ services:
           type: loki
           access: proxy 
           orgId: 1
-          url: http://loki:13100
+          url: http://loki:3100
           basicAuth: false
           isDefault: true
           version: 1
@@ -47,3 +49,11 @@ services:
       - "13000:3000"
     networks:
       - loki
+    volumes:
+      - grafana_data:/var/lib/grafana
+      
+volumes:
+  loki_data:
+    driver: local
+  grafana_data:
+    driver: local
