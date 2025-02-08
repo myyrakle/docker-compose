@@ -16,7 +16,7 @@ services:
     image: grafana/promtail:latest
     volumes:
       - /var/log:/var/log
-    command: -config.file=/etc/promtail/config.yml
+    command: -config.file=./promtail-config.yml
     networks:
       - loki
 
@@ -51,9 +51,12 @@ services:
       - loki
     volumes:
       - grafana_data:/var/lib/grafana
+      - grafana_etc:/etc/grafana
       
 volumes:
   loki_data:
     driver: local
   grafana_data:
+    driver: local
+  grafana_etc: 
     driver: local
