@@ -1,5 +1,5 @@
 server:
-  http_listen_port: 9080
+  http_listen_port: 0
   grpc_listen_port: 0
 
 positions:
@@ -12,8 +12,10 @@ clients:
 scrape_configs:
   - job_name: collect-logs
     static_configs:
-      labels:
-        __path__: /var/log/loki/*.log
+      - targets:
+          - localhost
+        labels:
+          __path__: /var/log/loki/*.log
     pipeline_stages:
       - json:
           expressions:
@@ -21,8 +23,8 @@ scrape_configs:
             service: service
             message: message
             shopID: shopID
-      - regex:
-          expression: "/var/log/loki/(?P<job>[^/]+).log"
+            containerID: containerID
+            timestamp: timestamp
       - labels:
-          job:
-          filename:
+          job: containerID
+          service_name: service
