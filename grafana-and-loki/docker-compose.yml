@@ -53,6 +53,18 @@ services:
       - grafana_data:/var/lib/grafana
       - grafana_etc:/etc/grafana
       
+  nodejs-server: 
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports: 
+      - "4444:4444"
+    networks: 
+      - loki
+    depends_on: 
+      - loki
+      - grafana
+
 volumes:
   loki_data:
     driver: local
