@@ -13,10 +13,9 @@ services:
       - loki_data:/loki
 
   promtail:
-    image: grafana/promtail:latest
-    volumes:
-      - /var/log:/var/log
-    command: -config.file=./promtail-config.yml
+    build: 
+      context: .
+      dockerfile: Dockerfile.promtail
     networks:
       - loki
 
@@ -56,14 +55,18 @@ services:
   nodejs-server: 
     build: 
       context: .
-      dockerfile: Dockerfile
-    ports: 
-      - "4444:4444"
+      dockerfile: Dockerfile.nodejs
     networks: 
       - loki
     depends_on: 
       - loki
       - grafana
+    deploy:
+      replicas: 3
+    environment:
+      SERVICE_NAME: nodejs-server
+    volumes:
+      - /var/log:/var/log
 
 volumes:
   loki_data:
