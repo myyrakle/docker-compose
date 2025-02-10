@@ -28,3 +28,5 @@ scrape_configs:
       - labels:
           job: containerID
           service_name: service
+          level: level
+          shopID: shopID
