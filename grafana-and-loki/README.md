@@ -1,4 +1,7 @@
 # Grafana & Loki template 
+- Configuration for logging
+
+## How to use
 
 deploy
 ```bash

@@ -1,0 +1,112 @@
+services:
+  memcached:
+    image: memcached:1.6.29
+    container_name: memcached
+    ports:
+      - "11211:11211"
+    environment:
+      - MEMCACHED_MAX_MEMORY=64m  # Set the maximum memory usage
+      - MEMCACHED_THREADS=4       # Number of threads to use
+
+  tempo:
+    build:
+      context: .
+      dockerfile: Dockerfile.tempo
+    user: root
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml
+      - /var/tempo:/var/tempo
+    ports:
+      - "14268:14268"  # jaeger ingest
+      - "3200:3200"   # tempo
+      - "9095:9095" # tempo grpc
+      - "4317:4317"  # otlp grpc
+      - "4318:4318"  # otlp http
+      - "9411:9411"   # zipkin
+    depends_on:
+      - memcached
+
+  k6-tracing:
+    image: ghcr.io/grafana/xk6-client-tracing:v0.0.5
+    environment:
+      - ENDPOINT=tempo:4317
+    restart: always
+    depends_on:
+      - tempo
+
+  prometheus:
+    image: prom/prometheus:latest
+    command:
+      - --config.file=/etc/prometheus.yaml
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+      - --enable-feature=native-histograms
+    volumes:
+      - ../shared/prometheus.yaml:/etc/prometheus.yaml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+
+  grafana:
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /etc/grafana/provisioning/datasources
+        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
+        apiVersion: 1
+        datasources:
+        - name: Prometheus
+          type: prometheus
+          uid: prometheus
+          access: proxy
+          orgId: 1
+          url: http://prometheus:9090
+          basicAuth: false
+          isDefault: false
+          version: 1
+          editable: false
+          jsonData:
+            httpMethod: GET
+        - name: Tempo
+          type: tempo
+          access: proxy
+          orgId: 1
+          url: http://tempo:3200
+          basicAuth: false
+          isDefault: true
+          version: 1
+          editable: false
+          apiVersion: 1
+          uid: tempo
+          jsonData:
+            httpMethod: GET
+            serviceMap:
+              datasourceUid: prometheus
+            streamingEnabled:
+              search: true
+        - 
+        EOF
+        /run.sh
+    image: grafana/grafana:latest
+    ports:
+      - "13000:3000"
+    networks:
+      - loki
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - grafana_etc:/etc/grafana
+
+volumes:
+  grafana_data:
+    driver: local
+  grafana_etc: 
+    driver: local
+  prometheus_data: 
+    driver: local
+
