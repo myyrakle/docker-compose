@@ -35,6 +35,7 @@ func initTracer() *trace.TracerProvider {
 		trace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
 			semconv.ServiceNameKey.String("go-server"),
+			semconv.ServiceNamespaceKey.String("dev"),
 		)),
 	)
 
@@ -48,7 +49,14 @@ func initTracer() *trace.TracerProvider {
 		panic(err)
 	}
 
-	meterProvider := metric.NewMeterProvider(metric.WithReader(metric.NewPeriodicReader(metricExporter)))
+	meterProvider := metric.NewMeterProvider(
+		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
+		metric.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("go-server"),
+			semconv.ServiceNamespaceKey.String("dev"),
+		)),
+	)
 	if err != nil {
 		panic(err)
 	}
