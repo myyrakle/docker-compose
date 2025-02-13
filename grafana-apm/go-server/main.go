@@ -72,6 +72,8 @@ func initTracer() *trace.TracerProvider {
 
 func main() {
 	traceProvider := initTracer()
+	tracer := traceProvider.Tracer("foo")
+
 	defer func() {
 		if err := traceProvider.Shutdown(context.Background()); err != nil {
 			log.Fatalf("failed to shutdown tracer: %v", err)
@@ -81,6 +83,18 @@ func main() {
 	e := echo.New()
 
 	e.Use(otelecho.Middleware("go-server"))
+
+	e.GET("/trace", func(c echo.Context) error {
+		_, span := tracer.Start(c.Request().Context(), "test-span")
+		time.Sleep(200 * time.Millisecond)
+		span.End()
+
+		_, span = tracer.Start(c.Request().Context(), "test-span2")
+		time.Sleep(500 * time.Millisecond)
+		span.End()
+
+		return c.String(http.StatusOK, "Hello, World!")
+	})
 
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")

@@ -104,14 +104,14 @@ services:
       - grafana_data:/var/lib/grafana
       - grafana_etc:/etc/grafana
 
-  # otel-collector:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.otel
-  #   command: ["--config", "/etc/otel-collector-config.yaml"]
-  #   depends_on:
-  #     - prometheus
-  #     - tempo
+  otel-collector:
+    build:
+      context: .
+      dockerfile: Dockerfile.otel
+    command: ["--config", "/etc/otel-collector-config.yaml"]
+    depends_on:
+      - prometheus
+      - tempo
 
 volumes:
   grafana_data:
