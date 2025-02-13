@@ -17,12 +17,10 @@ services:
       - ./tempo.yaml:/etc/tempo.yaml
       - tempo_data:/var/tempo
     ports:
-      - "14268:14268"  # jaeger ingest
       - "3200:3200"   # tempo
-      - "9095:9095" # tempo grpc
-      - "4317:4317"  # otlp grpc
-      - "4318:4318"  # otlp http
-      - "9411:9411"   # zipkin
+      - "9095:9095"   # tempo grpc
+      - "4317:4317"
+      - "4318:4318"
     depends_on:
       - memcached
 
@@ -115,6 +113,15 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - grafana_etc:/etc/grafana
+
+  otel-collector:
+    build:
+      context: .
+      dockerfile: Dockerfile.otel
+    command: ["--config", "/etc/otel-collector-config.yaml"]
+    depends_on:
+      - prometheus
+      - tempo
 
 volumes:
   grafana_data:

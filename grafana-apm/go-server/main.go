@@ -96,5 +96,10 @@ func main() {
 		return c.String(http.StatusOK, "bar")
 	})
 
+	e.GET("/not-found", func(c echo.Context) error {
+		time.Sleep(2 * time.Second)
+		return c.String(http.StatusNotFound, "asdf")
+	})
+
 	e.Logger.Fatal(e.Start(":1323"))
 }
