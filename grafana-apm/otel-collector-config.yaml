@@ -12,7 +12,7 @@ exporters:
     tls:
       insecure: true
     endpoint: "tempo:4318"
-
+    
 service:
   pipelines:
     metrics:

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	otelTrace "go.opentelemetry.io/otel/trace"
 )
 
 func initTracer() *trace.TracerProvider {
@@ -72,6 +74,7 @@ func initTracer() *trace.TracerProvider {
 
 func main() {
 	traceProvider := initTracer()
+
 	tracer := traceProvider.Tracer("foo")
 
 	defer func() {
@@ -83,6 +86,35 @@ func main() {
 	e := echo.New()
 
 	e.Use(otelecho.Middleware("go-server"))
+
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			err := next(c)
+
+			span := otelTrace.SpanFromContext(c.Request().Context())
+
+			// responseStatusCode := c.Response().Status
+			if span != nil {
+				// spanStatus := codes.OK
+
+				// switch responseStatusCode {
+				// case http.StatusOK:
+				// 	spanStatus = codes.OK
+				// case http.StatusInternalServerError:
+				// 	spanStatus = codes.Internal
+				// case http.StatusNotFound:
+				// 	spanStatus = codes.NotFound
+				// }
+
+				fmt.Println("!!!@@")
+				// span.SetStatus(codes.Error, "error")
+
+				// fmt.Println(c.Response().Status)
+				// span.SetAttributes(attribute.Int("status", codes.Error))
+			}
+			return err
+		}
+	})
 
 	e.GET("/trace", func(c echo.Context) error {
 		_, span := tracer.Start(c.Request().Context(), "test-span")
@@ -113,6 +145,11 @@ func main() {
 	e.GET("/not-found", func(c echo.Context) error {
 		time.Sleep(2 * time.Second)
 		return c.String(http.StatusNotFound, "asdf")
+	})
+
+	e.GET("/internal", func(c echo.Context) error {
+		time.Sleep(2 * time.Second)
+		return c.String(http.StatusInternalServerError, "asdf")
 	})
 
 	e.Logger.Fatal(e.Start(":1323"))
