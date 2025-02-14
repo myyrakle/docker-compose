@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -81,6 +82,7 @@ func main() {
 				}
 
 				span.SetStatus(spanStatus, "")
+				span.SetAttributes(attribute.Bool("primary", true))
 			}
 			return err
 		}
@@ -98,12 +100,30 @@ func main() {
 		return c.String(http.StatusOK, "trace completed")
 	})
 
+	e.GET("/api", func(c echo.Context) error {
+		// call google.com
+		response, _ := http.Get("https://google.com")
+		defer response.Body.Close()
+
+		return c.String(http.StatusOK, "api called")
+	})
+
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 
 	e.GET("/foo", func(c echo.Context) error {
 		time.Sleep(1 * time.Second)
+
+		span := otelTrace.SpanFromContext(c.Request().Context())
+
+		if span != nil {
+			span.SetAttributes(attribute.KeyValue{
+				Key:   "password",
+				Value: attribute.StringValue("q1w2e3r4"),
+			})
+		}
+
 		return c.String(http.StatusOK, "foo")
 	})
 
