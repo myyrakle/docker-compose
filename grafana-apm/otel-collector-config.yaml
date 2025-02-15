@@ -11,7 +11,7 @@ exporters:
   otlp:
     tls:
       insecure: true
-    endpoint: "tempo:4318"
+    endpoint: "tempo:4317"
     
 service:
   pipelines:

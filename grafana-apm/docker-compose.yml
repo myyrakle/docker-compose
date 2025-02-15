@@ -16,9 +16,6 @@ services:
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml
       - tempo_data:/var/tempo
-    ports:
-      - "4317:4317"
-      - "4318:4318"
     depends_on:
       - memcached
 
@@ -109,6 +106,9 @@ services:
       context: .
       dockerfile: Dockerfile.otel
     command: ["--config", "/etc/otel-collector-config.yaml"]
+    ports:
+      - "4317:4317"
+      - "4318:4318"
     depends_on:
       - prometheus
       - tempo

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -11,6 +10,8 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/metric"
@@ -93,24 +94,17 @@ func main() {
 
 			span := otelTrace.SpanFromContext(c.Request().Context())
 
-			// responseStatusCode := c.Response().Status
 			if span != nil {
-				// spanStatus := codes.OK
+				responseStatusCode := c.Response().Status
 
-				// switch responseStatusCode {
-				// case http.StatusOK:
-				// 	spanStatus = codes.OK
-				// case http.StatusInternalServerError:
-				// 	spanStatus = codes.Internal
-				// case http.StatusNotFound:
-				// 	spanStatus = codes.NotFound
-				// }
+				spanStatus := codes.Ok
 
-				fmt.Println("!!!@@")
-				// span.SetStatus(codes.Error, "error")
+				if responseStatusCode >= 400 {
+					spanStatus = codes.Error
+				}
 
-				// fmt.Println(c.Response().Status)
-				// span.SetAttributes(attribute.Int("status", codes.Error))
+				span.SetStatus(spanStatus, "")
+				span.SetAttributes(attribute.Bool("primary", true))
 			}
 			return err
 		}
@@ -125,7 +119,15 @@ func main() {
 		time.Sleep(500 * time.Millisecond)
 		span.End()
 
-		return c.String(http.StatusOK, "Hello, World!")
+		return c.String(http.StatusOK, "trace completed")
+	})
+
+	e.GET("/api", func(c echo.Context) error {
+		// call google.com
+		response, _ := http.Get("https://google.com")
+		defer response.Body.Close()
+
+		return c.String(http.StatusOK, "api called")
 	})
 
 	e.GET("/", func(c echo.Context) error {
@@ -134,6 +136,16 @@ func main() {
 
 	e.GET("/foo", func(c echo.Context) error {
 		time.Sleep(1 * time.Second)
+
+		span := otelTrace.SpanFromContext(c.Request().Context())
+
+		if span != nil {
+			span.SetAttributes(attribute.KeyValue{
+				Key:   "password",
+				Value: attribute.StringValue("q1w2e3r4"),
+			})
+		}
+
 		return c.String(http.StatusOK, "foo")
 	})
 
@@ -144,12 +156,17 @@ func main() {
 
 	e.GET("/not-found", func(c echo.Context) error {
 		time.Sleep(2 * time.Second)
-		return c.String(http.StatusNotFound, "asdf")
+		return c.String(http.StatusNotFound, "NOT FOUND")
 	})
 
 	e.GET("/internal", func(c echo.Context) error {
 		time.Sleep(2 * time.Second)
-		return c.String(http.StatusInternalServerError, "asdf")
+		return c.String(http.StatusInternalServerError, "INTERNAL SERVER ERROR")
+	})
+
+	e.GET("/too-slow", func(c echo.Context) error {
+		time.Sleep(5 * time.Second)
+		return c.String(http.StatusInternalServerError, "slow")
 	})
 
 	e.Logger.Fatal(e.Start(":1323"))
