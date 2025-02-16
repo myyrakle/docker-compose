@@ -45,6 +45,12 @@ func initTracer() *trace.TracerProvider {
 	// Set the global tracer provider
 	otel.SetTracerProvider(traceProvider)
 
+	return traceProvider
+}
+
+func initMetric() *metric.MeterProvider {
+	ctx := context.Background()
+
 	metricExporter, err := otlpmetrichttp.New(ctx, otlpmetrichttp.WithEndpointURL(
 		"http://localhost:4318",
 	), otlpmetrichttp.WithInsecure())
@@ -53,7 +59,7 @@ func initTracer() *trace.TracerProvider {
 	}
 
 	meterProvider := metric.NewMeterProvider(
-		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
+		metric.WithReader(metric.NewPeriodicReader(metricExporter, metric.WithInterval(3*time.Second))),
 		metric.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
 			semconv.ServiceNameKey.String("go-server"),
@@ -70,11 +76,12 @@ func initTracer() *trace.TracerProvider {
 		panic(err)
 	}
 
-	return traceProvider
+	return meterProvider
 }
 
 func main() {
 	traceProvider := initTracer()
+	_ = initMetric()
 
 	tracer := traceProvider.Tracer("foo")
 
@@ -108,8 +115,6 @@ func main() {
 					spanStatus = codes.Error
 				}
 
-				span.SetAttributes(attribute.Int("http_status_code", c.Response().Status))
-				span.SetAttributes(attribute.String("http_route", c.Path()))
 				span.SetStatus(spanStatus, "")
 				span.SetAttributes(attribute.Bool("primary", true))
 			}

@@ -18,10 +18,22 @@ service:
     metrics:
       receivers: [otlp]
       exporters: [prometheus]
+    metrics/spanmetrics:
+      receivers: [spanmetrics]
+      exporters: [prometheus]
     traces:
       receivers: [otlp]
-      exporters: [otlp]
+      exporters: [spanmetrics, otlp]
   telemetry:
     metrics:
       address: 0.0.0.0:8888
       level: detailed
+
+connectors:
+  spanmetrics:
+    dimensions:
+      - name: http.method
+      - name: http.status_code
+      - name: http.route
+    exemplars:
+      enabled: true
