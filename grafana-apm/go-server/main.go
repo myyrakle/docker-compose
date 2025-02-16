@@ -95,6 +95,11 @@ func main() {
 			span := otelTrace.SpanFromContext(c.Request().Context())
 
 			if span != nil {
+				if err != nil {
+					span.SetStatus(codes.Error, err.Error())
+					return err
+				}
+
 				responseStatusCode := c.Response().Status
 
 				spanStatus := codes.Ok
@@ -103,6 +108,8 @@ func main() {
 					spanStatus = codes.Error
 				}
 
+				span.SetAttributes(attribute.Int("http_status_code", c.Response().Status))
+				span.SetAttributes(attribute.String("http_route", c.Path()))
 				span.SetStatus(spanStatus, "")
 				span.SetAttributes(attribute.Bool("primary", true))
 			}
