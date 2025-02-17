@@ -31,9 +31,18 @@ service:
 
 connectors:
   spanmetrics:
+    namespace: http_server_request
     dimensions:
       - name: http.method
       - name: http.status_code
       - name: http.route
+      - name: service.namespace	
+    histogram:
+      unit: s
     exemplars:
       enabled: true
+    events:
+      enabled: true
+      dimensions:
+        - name: exception.type
+        - name: exception.message
