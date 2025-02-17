@@ -80,7 +80,7 @@
               "uid": "prometheus"
             },
             "editorMode": "code",
-            "expr": "sum(http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", http_route=~\"$route\"}) by(service_name)",
+            "expr": "sum(http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", service_namespace=\"$env\", http_route=~\"$route\"}) by(service_name)",
             "instant": false,
             "legendFormat": "{{label_name}}",
             "range": true,
@@ -282,7 +282,7 @@
               "uid": "prometheus"
             },
             "editorMode": "code",
-            "expr": "sum(http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", http_route=~\"$route\"}) by(span_name)",
+            "expr": "sum(http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", service_namespace=\"$env\", http_route=~\"$route\"}) by(span_name)",
             "instant": false,
             "legendFormat": "{{label_name}}",
             "range": true,
@@ -357,7 +357,7 @@
             },
             "editorMode": "code",
             "exemplar": false,
-            "expr": "sum(http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", http_route=~\"$route\"}) by(span_name)",
+            "expr": "sum(http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", service_namespace=\"$env\", http_route=~\"$route\"}) by(span_name)",
             "instant": true,
             "legendFormat": "{{label_name}}",
             "range": false,
@@ -422,7 +422,7 @@
               "uid": "prometheus"
             },
             "editorMode": "code",
-            "expr": "sum(rate(http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", http_route=~\"$route\"}[3m])*60)",
+            "expr": "sum(rate(http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", service_namespace=\"$env\", http_route=~\"$route\"}[3m])*60)",
             "hide": false,
             "instant": false,
             "range": true,
@@ -491,7 +491,7 @@
               "uid": "prometheus"
             },
             "editorMode": "code",
-            "expr": "sum(http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service=\"$app\", status_code=~\"STATUS_CODE_ERROR\"})/sum(http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service=\"$app\"})",
+            "expr": "sum(http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", service_namespace=\"$env\",status_code=~\"STATUS_CODE_ERROR\"})/sum(http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", service_namespace=\"$env\"})",
             "instant": false,
             "range": true,
             "refId": "A"
@@ -590,7 +590,7 @@
               "uid": "prometheus"
             },
             "editorMode": "code",
-            "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"$app\", span_kind=\"SPAN_KIND_SERVER\", http_route=~\"$route\"}[3m])*60)  by(span_name)",
+            "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"$app\", service_namespace=\"$env\", span_kind=\"SPAN_KIND_SERVER\", http_route=~\"$route\"}[3m])*60)  by(span_name)",
             "hide": false,
             "instant": false,
             "legendFormat": "{{label_name}}",
@@ -691,7 +691,7 @@
               "uid": "prometheus"
             },
             "editorMode": "code",
-            "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", http_route=~\"$route\"}[3m])) by (le, span_name))",
+            "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", service_namespace=\"$env\", http_route=~\"$route\"}[3m])) by (le, span_name))",
             "instant": false,
             "legendFormat": "{{label_name}}",
             "range": true,
@@ -770,7 +770,7 @@
             },
             "editorMode": "code",
             "exemplar": false,
-            "expr": "sort_desc(http_server_request_duration_seconds_sum{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", http_status_code!=\"\", http_route=~\"$route\"} / http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", http_status_code!=\"\", http_route=~\"$route\"})",
+            "expr": "sort_desc(http_server_request_duration_seconds_sum{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", service_namespace=\"$env\", http_status_code!=\"\", http_route=~\"$route\"} / http_server_request_duration_seconds_count{span_kind=\"SPAN_KIND_SERVER\", service_name=\"$app\", service_namespace=\"$env\", http_status_code!=\"\", http_route=~\"$route\"})",
             "instant": true,
             "legendFormat": "[{{http_status_code}}] {{span_name}}",
             "range": false,
@@ -1058,6 +1058,28 @@
           "refresh": 1,
           "regex": "",
           "type": "query"
+        },
+        {
+          "current": {
+            "text": "dev",
+            "value": "dev"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "definition": "label_values(service_namespace)",
+          "label": "Environment",
+          "name": "env",
+          "options": [],
+          "query": {
+            "qryType": 1,
+            "query": "label_values(service_namespace)",
+            "refId": "PrometheusVariableQueryEditor-VariableQuery"
+          },
+          "refresh": 1,
+          "regex": "",
+          "type": "query"
         }
       ]
     },
@@ -1069,6 +1091,6 @@
     "timezone": "",
     "title": "OpenTelemetry APM",
     "uid": "opentelemetry-apm",
-    "version": 7,
+    "version": 9,
     "weekStart": ""
-}
+  }
