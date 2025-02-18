@@ -20,7 +20,7 @@ services:
       - memcached
 
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:3.4.2
     ports:
       - "13100:3100"
     command: -config.file=/etc/loki/local-config.yaml
@@ -94,7 +94,7 @@ services:
           editable: false
         EOF
         /run.sh
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.5.1
     ports:
       - "13000:3000"
     volumes:
