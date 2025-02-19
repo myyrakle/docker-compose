@@ -114,6 +114,15 @@ services:
       - prometheus
       - tempo
 
+  postgresql: 
+    image: postgres:13.4
+    environment:
+      POSTGRES_USER: otel
+      POSTGRES_PASSWORD: otel
+      POSTGRES_DB: otel
+    ports:
+      - "25432:5432"
+
 volumes:
   grafana_data:
     driver: local

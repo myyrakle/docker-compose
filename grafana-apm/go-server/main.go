@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"net/http"
 	"time"
+
+	_ "github.com/lib/pq"
 
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
@@ -79,6 +82,22 @@ func initMetric() *metric.MeterProvider {
 	return meterProvider
 }
 
+func initDB() *sql.DB {
+	connStr := "postgres://otel:otel@localhost:25432/otel?sslmode=disable"
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		panic(err)
+	}
+
+	// Test connection
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	return db
+}
+
 func main() {
 	traceProvider := initTracer()
 	_ = initMetric()
@@ -90,6 +109,37 @@ func main() {
 			log.Fatalf("failed to shutdown tracer: %v", err)
 		}
 	}()
+
+	// meter := metricProvider.Meter("db-operations")
+	// dbDurationHistogram, err := meter.Float64Histogram(
+	// 	"db_client_operation_duration_seconds",
+	// )
+	// if err != nil {
+	// 	log.Fatalf("Failed to create metric: %v", err)
+	// }
+
+	db := initDB()
+
+	executeQuery := func(ctx context.Context, methodName string, query string) (*sql.Rows, error) {
+		_, span := tracer.Start(ctx, "db-span")
+		defer span.End()
+
+		// https://opentelemetry.io/docs/specs/semconv/database/database-metrics/
+		span.SetAttributes(attribute.String("db.database", "none"))
+		span.SetAttributes(attribute.String("db.system.name", "postgresql"))
+		span.SetAttributes(attribute.String("db.operation", "query"))
+		span.SetAttributes(attribute.String("db.operation.name", methodName))
+		span.SetAttributes(attribute.String("db.query.text", query))
+
+		result, err := db.Query(query)
+
+		if err != nil {
+			span.SetAttributes(attribute.String("db.error", err.Error()))
+			span.RecordError(err)
+			return nil, err
+		}
+		return result, nil
+	}
 
 	e := echo.New()
 
@@ -179,6 +229,25 @@ func main() {
 	e.GET("/too-slow", func(c echo.Context) error {
 		time.Sleep(5 * time.Second)
 		return c.String(http.StatusInternalServerError, "slow")
+	})
+
+	e.GET("/db-call", func(c echo.Context) error {
+		_, err := executeQuery(c.Request().Context(), "just select 1", "SELECT 1")
+		if err != nil {
+			c.String(http.StatusInternalServerError, "db error")
+		}
+
+		return c.String(http.StatusOK, "db called")
+	})
+
+	e.GET("/db-error", func(c echo.Context) error {
+		_, err := executeQuery(c.Request().Context(), "just error", "SELECT asdf")
+		if err != nil {
+			c.String(http.StatusInternalServerError, "db error")
+			return nil
+		}
+
+		return c.String(http.StatusOK, "db error")
 	})
 
 	e.Logger.Fatal(e.Start(":1323"))

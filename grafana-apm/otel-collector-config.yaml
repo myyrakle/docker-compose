@@ -12,31 +12,36 @@ exporters:
     tls:
       insecure: true
     endpoint: "tempo:4317"
-    
+
 service:
   pipelines:
     metrics:
       receivers: [otlp]
       exporters: [prometheus]
-    metrics/spanmetrics:
-      receivers: [spanmetrics]
+    metrics/httpmetrics:
+      receivers: [spanmetrics/http]
       exporters: [prometheus]
+      processors: [filter/http]
+    metrics/dbmetrics:
+      receivers: [spanmetrics/db]
+      exporters: [prometheus]
+      processors: [filter/db]
     traces:
       receivers: [otlp]
-      exporters: [spanmetrics, otlp]
+      exporters: [spanmetrics/http, spanmetrics/db, otlp]
   telemetry:
     metrics:
       address: 0.0.0.0:8888
       level: detailed
 
 connectors:
-  spanmetrics:
+  spanmetrics/http:
     namespace: http_server_request
     dimensions:
       - name: http.method
       - name: http.status_code
       - name: http.route
-      - name: service.namespace	
+      - name: service.namespace
     histogram:
       unit: s
     exemplars:
@@ -46,3 +51,28 @@ connectors:
       dimensions:
         - name: exception.type
         - name: exception.message
+  spanmetrics/db:
+    namespace: db_client_operation
+    dimensions:
+      - name: service.namespace
+      - name: db.system.name
+      - name: db.collection.name
+      - name: db.database
+      - name: db.operation
+      - name: db.operation.name
+      - name: db.query.text
+      - name: db.error
+    histogram:
+      unit: s
+
+processors:
+  filter/http:
+    error_mode: ignore
+    traces:
+      span:
+        - attributes["http.route"] != nil
+  filter/db:
+    error_mode: ignore
+    traces:
+      span:
+        - attributes["db.system"] != nil
