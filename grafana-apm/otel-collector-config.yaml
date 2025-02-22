@@ -26,9 +26,14 @@ service:
       receivers: [spanmetrics/db]
       exporters: [prometheus]
       processors: [filter/db]
+    metrics/outbound-httpmetrics:
+      receivers: [spanmetrics/outbound-http]
+      exporters: [prometheus]
+      processors: [filter/outbound-http]
     traces:
       receivers: [otlp]
-      exporters: [spanmetrics/http, spanmetrics/db, otlp]
+      exporters:
+        [spanmetrics/http, spanmetrics/db, spanmetrics/outbound-http, otlp]
   telemetry:
     metrics:
       address: 0.0.0.0:8888
@@ -64,6 +69,20 @@ connectors:
       - name: db.error
     histogram:
       unit: s
+  spanmetrics/outbound-http:
+    namespace: http_client_request
+    dimensions:
+      - name: service.namespace
+      - name: server.address
+      - name: server.port
+      - name: http.request.method
+      - name: http.response.status_code
+      - name: network.protocol.name
+      - name: url.template
+      - name: url.full
+      - name: error.type
+    histogram:
+      unit: s
 
 processors:
   filter/http:
@@ -76,3 +95,8 @@ processors:
     traces:
       span:
         - attributes["db.system"] != nil
+  filter/outbound-http:
+    error_mode: ignore
+    traces:
+      span:
+        - attributes["server.address"] != nil
