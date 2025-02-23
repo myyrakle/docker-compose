@@ -22,13 +22,23 @@ service:
       receivers: [spanmetrics/http]
       exporters: [prometheus]
       processors: [filter/http]
-    metrics/dbmetrics:
-      receivers: [spanmetrics/db]
+    metrics/outbound-dbmetrics:
+      receivers: [spanmetrics/outbound-db]
       exporters: [prometheus]
-      processors: [filter/db]
+      processors: [filter/outbound-db]
+    metrics/outbound-httpmetrics:
+      receivers: [spanmetrics/outbound-http]
+      exporters: [prometheus]
+      processors: [filter/outbound-http]
     traces:
       receivers: [otlp]
-      exporters: [spanmetrics/http, spanmetrics/db, otlp]
+      exporters:
+        [
+          spanmetrics/http,
+          spanmetrics/outbound-db,
+          spanmetrics/outbound-http,
+          otlp,
+        ]
   telemetry:
     metrics:
       address: 0.0.0.0:8888
@@ -51,7 +61,7 @@ connectors:
       dimensions:
         - name: exception.type
         - name: exception.message
-  spanmetrics/db:
+  spanmetrics/outbound-db:
     namespace: db_client_operation
     dimensions:
       - name: service.namespace
@@ -64,15 +74,38 @@ connectors:
       - name: db.error
     histogram:
       unit: s
+  spanmetrics/outbound-http:
+    namespace: http_client_request
+    dimensions:
+      - name: service.namespace
+      - name: server.address
+      - name: server.port
+      - name: http.request.method
+      - name: http.request.body.size
+      - name: http.request.body
+      - name: http.response.body.size
+      - name: http.response.body
+      - name: http.response.status_code
+      - name: network.protocol.name
+      - name: url.template
+      - name: url.full
+      - name: error.type
+    histogram:
+      unit: s
 
 processors:
   filter/http:
     error_mode: ignore
     traces:
       span:
-        - attributes["http.route"] != nil
-  filter/db:
+        - attributes["span.group"] == "API-SERVER"
+  filter/outbound-db:
     error_mode: ignore
     traces:
       span:
-        - attributes["db.system"] != nil
+        - attributes["span.group"] == "OUTBOUND-DATABASE"
+  filter/outbound-http:
+    error_mode: ignore
+    traces:
+      span:
+        - attributes["span.group"] == "OUTBOUND-HTTP"

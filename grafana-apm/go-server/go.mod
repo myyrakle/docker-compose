@@ -3,6 +3,7 @@ module go-server
 go 1.23.2
 
 require (
+	github.com/go-resty/resty/v2 v2.16.5
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/lib/pq v1.10.9
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.59.0

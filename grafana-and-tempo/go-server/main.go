@@ -83,6 +83,7 @@ func main() {
 
 				span.SetStatus(spanStatus, "")
 				span.SetAttributes(attribute.Bool("primary", true))
+				span.SetAttributes(attribute.String("span.group", "API-SERVER"))
 			}
 			return err
 		}

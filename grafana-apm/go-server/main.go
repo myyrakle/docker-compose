@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	_ "github.com/lib/pq"
 
 	"github.com/labstack/echo/v4"
@@ -110,18 +113,10 @@ func main() {
 		}
 	}()
 
-	// meter := metricProvider.Meter("db-operations")
-	// dbDurationHistogram, err := meter.Float64Histogram(
-	// 	"db_client_operation_duration_seconds",
-	// )
-	// if err != nil {
-	// 	log.Fatalf("Failed to create metric: %v", err)
-	// }
-
 	db := initDB()
 
 	executeQuery := func(ctx context.Context, methodName string, query string) (*sql.Rows, error) {
-		_, span := tracer.Start(ctx, "db-span")
+		_, span := tracer.Start(ctx, "db-span", otelTrace.WithSpanKind(otelTrace.SpanKindClient))
 		defer span.End()
 
 		// https://opentelemetry.io/docs/specs/semconv/database/database-metrics/
@@ -130,6 +125,7 @@ func main() {
 		span.SetAttributes(attribute.String("db.operation", "query"))
 		span.SetAttributes(attribute.String("db.operation.name", methodName))
 		span.SetAttributes(attribute.String("db.query.text", query))
+		span.SetAttributes(attribute.String("span.group", "OUTBOUND-DATABASE"))
 
 		result, err := db.Query(query)
 
@@ -140,6 +136,74 @@ func main() {
 		}
 		return result, nil
 	}
+
+	restyClient := resty.New().OnAfterResponse(func(client *resty.Client, response *resty.Response) error {
+		if response == nil {
+			fmt.Println("Response is nil")
+		}
+
+		if response.Request == nil {
+			fmt.Println("Request is nil")
+			return nil
+		}
+
+		ctx := response.Request.Context()
+
+		if ctx == nil {
+			fmt.Println("Context is nil")
+			return nil
+		}
+
+		_, span := tracer.Start(ctx, "http-span", otelTrace.WithSpanKind(otelTrace.SpanKindClient))
+		defer span.End()
+
+		if response.Request.RawRequest == nil {
+			fmt.Println("RawRequest is nil")
+			return nil
+		}
+
+		if response.Request.RawRequest.URL == nil {
+			fmt.Println("URL is nil")
+			return nil
+		}
+
+		rawRequest := response.Request.RawRequest
+		urlInfo := rawRequest.URL
+
+		// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
+		span.SetAttributes(attribute.String("server.address", urlInfo.Hostname()))
+		span.SetAttributes(attribute.String("server.port", urlInfo.Port()))
+		span.SetAttributes(attribute.String("http.request.method", rawRequest.Method))
+		span.SetAttributes(attribute.String("http.response.status_code", response.Status()))
+		span.SetAttributes(attribute.String("network.transport", "http"))
+		span.SetAttributes(attribute.String("url.template", urlInfo.Path))
+		span.SetAttributes(attribute.String("url.full", urlInfo.String()))
+		span.SetAttributes(attribute.String("span.group", "OUTBOUND-HTTP"))
+
+		if rawRequest.Body != nil {
+			requestBodyBytes, _ := io.ReadAll(rawRequest.Body)
+
+			// 256 bytes limit
+			requestBodyString := string(requestBodyBytes)
+
+			if len(requestBodyString) > 256 {
+				requestBodyString = requestBodyString[:256]
+			}
+
+			span.SetAttributes(attribute.Int("http.request.body.size", len(requestBodyBytes)))
+			span.SetAttributes(attribute.String("http.request.body", requestBodyString))
+		}
+
+		// 256 bytes limit
+		responseBodyString := string(response.Body())
+		if len(responseBodyString) > 256 {
+			responseBodyString = responseBodyString[:256]
+		}
+		span.SetAttributes(attribute.Int("http.response.body.size", len(response.Body())))
+		span.SetAttributes(attribute.String("http.response.body", responseBodyString))
+
+		return nil
+	})
 
 	e := echo.New()
 
@@ -167,6 +231,7 @@ func main() {
 
 				span.SetStatus(spanStatus, "")
 				span.SetAttributes(attribute.Bool("primary", true))
+				span.SetAttributes(attribute.String("span.group", "API-SERVER"))
 			}
 			return err
 		}
@@ -248,6 +313,18 @@ func main() {
 		}
 
 		return c.String(http.StatusOK, "db error")
+	})
+
+	e.GET("/http-call", func(c echo.Context) error {
+		request := restyClient.R()
+		request = request.SetContext(c.Request().Context())
+
+		_, err := request.Get("https://google.com")
+		if err != nil {
+			c.String(http.StatusInternalServerError, "http error")
+		}
+
+		return c.String(http.StatusOK, "http called")
 	})
 
 	e.Logger.Fatal(e.Start(":1323"))
