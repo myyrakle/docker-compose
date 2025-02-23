@@ -137,23 +137,6 @@ func main() {
 	}
 
 	restyClient := resty.New().OnAfterResponse(func(client *resty.Client, response *resty.Response) error {
-		requestContext := client.R()
-
-		if requestContext == nil {
-			fmt.Println("Request is nil")
-			return nil
-		}
-
-		ctx := requestContext.Context()
-
-		if ctx == nil {
-			fmt.Println("Context is nil")
-			return nil
-		}
-
-		_, span := tracer.Start(ctx, "http-span", otelTrace.WithSpanKind(otelTrace.SpanKindClient))
-		defer span.End()
-
 		if response == nil {
 			fmt.Println("Response is nil")
 		}
@@ -162,6 +145,16 @@ func main() {
 			fmt.Println("Request is nil")
 			return nil
 		}
+
+		ctx := response.Request.Context()
+
+		if ctx == nil {
+			fmt.Println("Context is nil")
+			return nil
+		}
+
+		_, span := tracer.Start(ctx, "http-span", otelTrace.WithSpanKind(otelTrace.SpanKindClient))
+		defer span.End()
 
 		if response.Request.RawRequest == nil {
 			fmt.Println("RawRequest is nil")
