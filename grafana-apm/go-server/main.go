@@ -125,6 +125,7 @@ func main() {
 		span.SetAttributes(attribute.String("db.operation", "query"))
 		span.SetAttributes(attribute.String("db.operation.name", methodName))
 		span.SetAttributes(attribute.String("db.query.text", query))
+		span.SetAttributes(attribute.String("span.group", "OUTBOUND-DATABASE"))
 
 		result, err := db.Query(query)
 
@@ -177,6 +178,7 @@ func main() {
 		span.SetAttributes(attribute.String("network.transport", "http"))
 		span.SetAttributes(attribute.String("url.template", urlInfo.Path))
 		span.SetAttributes(attribute.String("url.full", urlInfo.String()))
+		span.SetAttributes(attribute.String("span.group", "OUTBOUND-HTTP"))
 
 		if rawRequest.Body != nil {
 			requestBodyBytes, _ := io.ReadAll(rawRequest.Body)
@@ -229,6 +231,7 @@ func main() {
 
 				span.SetStatus(spanStatus, "")
 				span.SetAttributes(attribute.Bool("primary", true))
+				span.SetAttributes(attribute.String("span.group", "API-SERVER"))
 			}
 			return err
 		}

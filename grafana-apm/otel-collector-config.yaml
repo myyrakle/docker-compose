@@ -22,10 +22,10 @@ service:
       receivers: [spanmetrics/http]
       exporters: [prometheus]
       processors: [filter/http]
-    metrics/dbmetrics:
-      receivers: [spanmetrics/db]
+    metrics/outbound-dbmetrics:
+      receivers: [spanmetrics/outbound-db]
       exporters: [prometheus]
-      processors: [filter/db]
+      processors: [filter/outbound-db]
     metrics/outbound-httpmetrics:
       receivers: [spanmetrics/outbound-http]
       exporters: [prometheus]
@@ -52,6 +52,7 @@ connectors:
       - name: http.status_code
       - name: http.route
       - name: service.namespace
+      - name: span.group
     histogram:
       unit: s
     exemplars:
@@ -72,6 +73,7 @@ connectors:
       - name: db.operation.name
       - name: db.query.text
       - name: db.error
+      - name: span.group
     histogram:
       unit: s
   spanmetrics/outbound-http:
@@ -90,6 +92,7 @@ connectors:
       - name: url.template
       - name: url.full
       - name: error.type
+      - name: span.group
     histogram:
       unit: s
 
@@ -98,14 +101,14 @@ processors:
     error_mode: ignore
     traces:
       span:
-        - attributes["http.route"] != nil
+        - attributes["span.group"] == "API-SERVER"
   filter/outbound-db:
     error_mode: ignore
     traces:
       span:
-        - attributes["db.system"] != nil
+        - attributes["span.group"] == "OUTBOUND-DATABASE"
   filter/outbound-http:
     error_mode: ignore
     traces:
       span:
-        - attributes["server.address"] != nil
+        - attributes["span.group"] == "OUTBOUND-HTTP"
