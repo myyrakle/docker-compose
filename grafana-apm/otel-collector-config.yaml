@@ -76,6 +76,10 @@ connectors:
       - name: server.address
       - name: server.port
       - name: http.request.method
+      - name: http.request.body.size
+      - name: http.request.body
+      - name: http.response.body.size
+      - name: http.response.body
       - name: http.response.status_code
       - name: network.protocol.name
       - name: url.template
