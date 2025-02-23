@@ -52,7 +52,6 @@ connectors:
       - name: http.status_code
       - name: http.route
       - name: service.namespace
-      - name: span.group
     histogram:
       unit: s
     exemplars:
@@ -73,7 +72,6 @@ connectors:
       - name: db.operation.name
       - name: db.query.text
       - name: db.error
-      - name: span.group
     histogram:
       unit: s
   spanmetrics/outbound-http:
@@ -92,7 +90,6 @@ connectors:
       - name: url.template
       - name: url.full
       - name: error.type
-      - name: span.group
     histogram:
       unit: s
 
