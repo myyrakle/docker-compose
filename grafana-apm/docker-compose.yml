@@ -5,7 +5,7 @@ services:
       - "11211:11211"
     environment:
       - MEMCACHED_MAX_MEMORY=64m  # Set the maximum memory usage
-      - MEMCACHED_THREADS=4       # Number of threads to use
+      - MEMCACHED_THREADS=1       # Number of threads to use
 
   tempo:
     build:
