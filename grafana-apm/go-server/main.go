@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	_ "github.com/lib/pq"
+	"github.com/pkg/errors"
 
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
@@ -327,5 +328,58 @@ func main() {
 		return c.String(http.StatusOK, "http called")
 	})
 
+	e.GET("/event", func(c echo.Context) error {
+		span := otelTrace.SpanFromContext(c.Request().Context())
+
+		if span != nil {
+			span.AddEvent("event1", otelTrace.WithAttributes(attribute.String("key1", "value1")))
+			span.AddEvent("event2", otelTrace.WithAttributes(attribute.String("key2", "value2")))
+		}
+
+		return c.String(http.StatusOK, "event")
+	})
+
+	e.GET("/direct-error", func(c echo.Context) error {
+		span := otelTrace.SpanFromContext(c.Request().Context())
+
+		err := SomeError{
+			Message: "direct error",
+		}
+
+		if span != nil {
+			span.RecordError(err)
+		}
+
+		return c.String(http.StatusOK, "error")
+	})
+
+	e.GET("/direct-error-with-stacktrace", func(c echo.Context) error {
+		span := otelTrace.SpanFromContext(c.Request().Context())
+
+		err := SomeError{
+			Message: "direct error",
+		}
+		wrappedErr := errors.Wrap(err, "wrapped error")
+
+		if span != nil {
+			// https://opentelemetry.io/docs/specs/otel/trace/exceptions/#attributes
+			span.RecordError(
+				wrappedErr,
+				otelTrace.WithAttributes(attribute.String("exception.stacktrace", fmt.Sprintf("%+v", wrappedErr))),
+			)
+		}
+
+		return c.String(http.StatusOK, "error")
+	})
+
 	e.Logger.Fatal(e.Start(":1323"))
+
+}
+
+type SomeError struct {
+	Message string
+}
+
+func (e SomeError) Error() string {
+	return e.Message
 }

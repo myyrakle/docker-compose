@@ -6,6 +6,7 @@ require (
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/lib/pq v1.10.9
+	github.com/pkg/errors v0.9.1
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.59.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.59.0
 	go.opentelemetry.io/otel v1.34.0
