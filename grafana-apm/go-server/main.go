@@ -327,5 +327,16 @@ func main() {
 		return c.String(http.StatusOK, "http called")
 	})
 
+	e.GET("/event", func(c echo.Context) error {
+		span := otelTrace.SpanFromContext(c.Request().Context())
+
+		if span != nil {
+			span.AddEvent("event1", otelTrace.WithAttributes(attribute.String("key1", "value1")))
+			span.AddEvent("event2", otelTrace.WithAttributes(attribute.String("key2", "value2")))
+		}
+
+		return c.String(http.StatusOK, "event")
+	})
+
 	e.Logger.Fatal(e.Start(":1323"))
 }
