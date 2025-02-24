@@ -36,6 +36,7 @@ services:
       - --web.enable-remote-write-receiver
       - --enable-feature=exemplar-storage
       - --enable-feature=native-histograms
+      - --storage.tsdb.retention.time=30d
     volumes:
       - prometheus_data:/prometheus
     ports:
