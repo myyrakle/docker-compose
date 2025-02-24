@@ -109,3 +109,12 @@ processors:
     traces:
       span:
         - attributes["span.group"] == "OUTBOUND-HTTP"
+
+cache:
+  background:
+    writeback_goroutines: 5
+  caches:
+    - roles:
+        - frontend-search
+      memcached:
+        addresses: dns+memcached:11211
