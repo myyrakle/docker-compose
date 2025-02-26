@@ -155,9 +155,6 @@ func main() {
 			return nil
 		}
 
-		_, span := tracer.Start(ctx, "http-span", otelTrace.WithSpanKind(otelTrace.SpanKindClient))
-		defer span.End()
-
 		if response.Request.RawRequest == nil {
 			fmt.Println("RawRequest is nil")
 			return nil
@@ -167,6 +164,15 @@ func main() {
 			fmt.Println("URL is nil")
 			return nil
 		}
+
+		requestTime := response.Request.Time
+		_, span := tracer.Start(
+			ctx,
+			"http-span",
+			otelTrace.WithSpanKind(otelTrace.SpanKindClient),
+			otelTrace.WithTimestamp(requestTime),
+		)
+		defer span.End()
 
 		rawRequest := response.Request.RawRequest
 		urlInfo := rawRequest.URL
@@ -185,23 +191,23 @@ func main() {
 			requestBodyBytes, _ := io.ReadAll(rawRequest.Body)
 
 			// 256 bytes limit
-			requestBodyString := string(requestBodyBytes)
+			requestBodyString := []rune(string(requestBodyBytes))
 
 			if len(requestBodyString) > 256 {
 				requestBodyString = requestBodyString[:256]
 			}
 
 			span.SetAttributes(attribute.Int("http.request.body.size", len(requestBodyBytes)))
-			span.SetAttributes(attribute.String("http.request.body", requestBodyString))
+			span.SetAttributes(attribute.String("http.request.body", string(requestBodyBytes)))
 		}
 
 		// 256 bytes limit
-		responseBodyString := string(response.Body())
+		responseBodyString := []rune(string(response.Body()))
 		if len(responseBodyString) > 256 {
 			responseBodyString = responseBodyString[:256]
 		}
 		span.SetAttributes(attribute.Int("http.response.body.size", len(response.Body())))
-		span.SetAttributes(attribute.String("http.response.body", responseBodyString))
+		span.SetAttributes(attribute.String("http.response.body", string(responseBodyString)))
 
 		return nil
 	})
