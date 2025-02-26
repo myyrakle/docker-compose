@@ -185,23 +185,23 @@ func main() {
 			requestBodyBytes, _ := io.ReadAll(rawRequest.Body)
 
 			// 256 bytes limit
-			requestBodyString := string(requestBodyBytes)
+			requestBodyString := []rune(string(requestBodyBytes))
 
 			if len(requestBodyString) > 256 {
 				requestBodyString = requestBodyString[:256]
 			}
 
 			span.SetAttributes(attribute.Int("http.request.body.size", len(requestBodyBytes)))
-			span.SetAttributes(attribute.String("http.request.body", requestBodyString))
+			span.SetAttributes(attribute.String("http.request.body", string(requestBodyBytes)))
 		}
 
 		// 256 bytes limit
-		responseBodyString := string(response.Body())
+		responseBodyString := []rune(string(response.Body()))
 		if len(responseBodyString) > 256 {
 			responseBodyString = responseBodyString[:256]
 		}
 		span.SetAttributes(attribute.Int("http.response.body.size", len(response.Body())))
-		span.SetAttributes(attribute.String("http.response.body", responseBodyString))
+		span.SetAttributes(attribute.String("http.response.body", string(responseBodyString)))
 
 		return nil
 	})
