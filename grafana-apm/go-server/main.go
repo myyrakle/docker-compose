@@ -155,9 +155,6 @@ func main() {
 			return nil
 		}
 
-		_, span := tracer.Start(ctx, "http-span", otelTrace.WithSpanKind(otelTrace.SpanKindClient))
-		defer span.End()
-
 		if response.Request.RawRequest == nil {
 			fmt.Println("RawRequest is nil")
 			return nil
@@ -167,6 +164,15 @@ func main() {
 			fmt.Println("URL is nil")
 			return nil
 		}
+
+		requestTime := response.Request.Time
+		_, span := tracer.Start(
+			ctx,
+			"http-span",
+			otelTrace.WithSpanKind(otelTrace.SpanKindClient),
+			otelTrace.WithTimestamp(requestTime),
+		)
+		defer span.End()
 
 		rawRequest := response.Request.RawRequest
 		urlInfo := rawRequest.URL
