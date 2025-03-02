@@ -60,8 +60,6 @@ connectors:
       enabled: true
       dimensions:
         - name: exception.type
-        - name: exception.message
-        - name: exception.stacktrace
   spanmetrics/outbound-db:
     namespace: db_client_operation
     dimensions:
@@ -71,8 +69,6 @@ connectors:
       - name: db.database
       - name: db.operation
       - name: db.operation.name
-      - name: db.query.text
-      - name: db.error
     histogram:
       unit: s
   spanmetrics/outbound-http:
@@ -82,15 +78,8 @@ connectors:
       - name: server.address
       - name: server.port
       - name: http.request.method
-      - name: http.request.body.size
-      - name: http.request.body
-      - name: http.response.body.size
-      - name: http.response.body
       - name: http.response.status_code
-      - name: network.protocol.name
       - name: url.template
-      - name: url.full
-      - name: error.type
     histogram:
       unit: s
 
