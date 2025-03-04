@@ -99,3 +99,9 @@ processors:
     traces:
       span:
         - attributes["span.group"] == "OUTBOUND-HTTP"
+
+  # If you need to limit memory usage, uncomment the following section
+  # memory_limiter:
+  #   check_interval: 1s
+  #   limit_mib: 1900 # 1.9 GB
+  #   spike_limit_mib: 400 # 400 MB (1900-400 = 1.5GB)
