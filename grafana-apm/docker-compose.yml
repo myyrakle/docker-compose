@@ -4,15 +4,15 @@ services:
     ports:
       - "11211:11211"
     environment:
-      - MEMCACHED_MAX_MEMORY=64m  # Set the maximum memory usage
-      - MEMCACHED_THREADS=1       # Number of threads to use
+      - MEMCACHED_MAX_MEMORY=64m # Set the maximum memory usage
+      - MEMCACHED_THREADS=1 # Number of threads to use
 
   tempo:
     build:
       context: .
       dockerfile: Dockerfile.tempo
     user: root
-    command: [ "-config.file=/etc/tempo.yaml" ]
+    command: ["-config.file=/etc/tempo.yaml"]
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml
       - tempo_data:/var/tempo
@@ -37,6 +37,9 @@ services:
       - --enable-feature=exemplar-storage
       - --enable-feature=native-histograms
       - --storage.tsdb.retention.time=30d
+      - --auto-gomemlimit.ratio=0.6
+      - --storage.tsdb.max-block-duration=30m
+      - --storage.tsdb.min-block-duration=30m
     volumes:
       - prometheus_data:/prometheus
     ports:
@@ -115,7 +118,7 @@ services:
       - prometheus
       - tempo
 
-  postgresql: 
+  postgresql:
     image: postgres:13.4
     environment:
       POSTGRES_USER: otel
@@ -127,9 +130,9 @@ services:
 volumes:
   grafana_data:
     driver: local
-  grafana_etc: 
+  grafana_etc:
     driver: local
-  prometheus_data: 
+  prometheus_data:
     driver: local
   tempo_data:
     driver: local
