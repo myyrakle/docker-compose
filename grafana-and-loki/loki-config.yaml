@@ -1,7 +1,3 @@
-
-# This is a complete configuration to deploy Loki backed by the filesystem.
-# The index will be shipped to the storage via tsdb-shipper.
-
 auth_enabled: false
 
 server:
@@ -30,6 +26,6 @@ storage_config:
     directory: /tmp/loki/chunks
 
 limits_config:
-  ingestion_rate_mb: 16  # default 4mb
-  ingestion_burst_size_mb: 32  
-  max_line_size: 256KB  
+  ingestion_rate_mb: 16
+  ingestion_burst_size_mb: 32
+  max_line_size: 256KB
