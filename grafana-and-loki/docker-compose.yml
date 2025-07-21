@@ -3,7 +3,9 @@ networks:
 
 services:
   loki:
-    image: grafana/loki:3.4.2
+    build: 
+      context: .
+      dockerfile: Dockerfile.loki
     ports:
       - "13100:3100"
     command: -config.file=/etc/loki/local-config.yaml
