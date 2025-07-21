@@ -1,0 +1,4 @@
+limits_config:
+  ingestion_rate_mb: 16  # default 4mb
+  ingestion_burst_size_mb: 32  
+  max_line_size: 256KB  
