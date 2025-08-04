@@ -60,10 +60,9 @@ services:
   kibana-token-setter:
     image: alpine:latest
     container_name: kibana-token-setter
-    env_file:
-      - ./config/elastic_password.env
     command: >
       sh -c "
+        source /config/elastic_password.env
         env
         ELASTIC_PASSWORD=$${ELASTIC_PASSWORD}
         echo $$ELASTIC_PASSWORD
@@ -108,19 +107,9 @@ services:
       password-setter:
         condition: service_completed_successfully
 
-  # Kibana 서비스
   kibana:
     image: docker.elastic.co/kibana/kibana:8.18.0
     container_name: kibana
-    env_file:
-      - ./config/elastic_password.env
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - SERVER_NAME=kibana
-      - SERVER_SSL_ENABLED=false
-      - SERVER_HOST=0.0.0.0
-      - xpack.security.enabled=true
-      - xpack.encryptedSavedObjects.encryptionKey=min-32-byte-long-strong-encryption-key
     command: >
       sh -c "
         # 토큰 파일이 존재하면 읽어서 환경 변수로 로드
@@ -133,9 +122,14 @@ services:
         # Kibana 원래 실행 명령어 실행
         exec /usr/local/bin/kibana-docker;
       "
-    volumes:
-      # kibana-token-setter가 생성한 파일을 읽기 위해 볼륨 마운트
-      - ./config:/config:ro
+    environment:
+      - ELASTICSEARCH_SERVICEACCOUNTTOKEN=$${ELASTICSEARCH_SERVICEACCOUNTTOKEN}
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=kibana
+      - SERVER_SSL_ENABLED=false
+      - SERVER_HOST=0.0.0.0
+      - xpack.security.enabled=true
+      - xpack.encryptedSavedObjects.encryptionKey=min-32-byte-long-strong-encryption-key
     ports:
       - "15601:5601"
     networks:
@@ -145,8 +139,10 @@ services:
         condition: service_healthy
       kibana-token-setter:
         condition: service_completed_successfully
+    volumes:
+      - ./config:/config
     healthcheck:
-      test: ["CMD-SHELL", "curl http://localhost:5601 || exit 1"]
+      test: ["CMD-SHELL", "curl http://localhost:5601"]
       interval: 10s
       timeout: 5s
       retries: 3
