@@ -147,54 +147,6 @@ services:
       timeout: 5s
       retries: 3
 
-  # APM Server 서비스
-  # apm-server:
-  #   image: docker.elastic.co/apm/apm-server:8.11.0
-  #   container_name: apm-server
-  #   command: >
-  #     apm-server -e
-  #       -E apm-server.rum.enabled=true
-  #       -E apm-server.host=0.0.0.0:8200
-  #       -E output.elasticsearch.hosts=["elasticsearch:9200"]
-  #       -E apm-server.kibana.enabled=true
-  #       -E apm-server.kibana.host=kibana:5601
-  #       -E setup.kibana.host=kibana:5601
-  #       -E setup.template.enabled=true
-  #       -E logging.level=info
-  #   ports:
-  #     - "18200:8200"
-  #   networks:
-  #     - elastic
-  #   depends_on:
-  #     elasticsearch:
-  #       condition: service_healthy
-  #     kibana:
-  #       condition: service_healthy
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "curl -f http://localhost:8200/ || exit 1"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
-
-  # 샘플 Node.js 애플리케이션 (APM Agent 포함)
-  # sample-app:
-  #   build:
-  #     context: ./sample-app
-  #     dockerfile: Dockerfile
-  #   container_name: sample-app
-  #   environment:
-  #     - ELASTIC_APM_SERVICE_NAME=sample-nodejs-app
-  #     - ELASTIC_APM_SERVER_URL=http://apm-server:8200
-  #     - ELASTIC_APM_ENVIRONMENT=development
-  #     - ELASTIC_APM_LOG_LEVEL=info
-  #   ports:
-  #     - "3000:3000"
-  #   networks:
-  #     - elk-network
-  #   depends_on:
-  #     apm-server:
-  #       condition: service_healthy
-
 volumes:
   elasticsearch_data:
     driver: local
