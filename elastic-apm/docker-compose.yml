@@ -147,34 +147,39 @@ services:
       timeout: 5s
       retries: 3
 
-  # APM Server 서비스
-  # apm-server:
-  #   image: docker.elastic.co/apm/apm-server:8.11.0
-  #   container_name: apm-server
-  #   command: >
-  #     apm-server -e
-  #       -E apm-server.rum.enabled=true
-  #       -E apm-server.host=0.0.0.0:8200
-  #       -E output.elasticsearch.hosts=["elasticsearch:9200"]
-  #       -E apm-server.kibana.enabled=true
-  #       -E apm-server.kibana.host=kibana:5601
-  #       -E setup.kibana.host=kibana:5601
-  #       -E setup.template.enabled=true
-  #       -E logging.level=info
-  #   ports:
-  #     - "18200:8200"
-  #   networks:
-  #     - elastic
-  #   depends_on:
-  #     elasticsearch:
-  #       condition: service_healthy
-  #     kibana:
-  #       condition: service_healthy
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "curl -f http://localhost:8200/ || exit 1"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:8.11.0
+    container_name: apm-server
+    command: >
+      sh -c "
+        . /config/elastic_password.env
+        env
+        echo $$ELASTIC_PASSWORD
+
+        # exec를 사용하여 현재 셸을 apm-server 프로세스로 대체합니다.
+        exec apm-server -e \
+          -E apm-server.rum.enabled=true \
+          -E apm-server.host=0.0.0.0:8200 \
+          -E output.elasticsearch.hosts='[\"elasticsearch:9200\"]' \
+          -E output.elasticsearch.username='elastic' \
+          -E output.elasticsearch.password='$${ELASTIC_PASSWORD}' \
+          -E apm-server.kibana.enabled=true \
+          -E apm-server.kibana.host=kibana:5601 \
+          -E setup.kibana.host=kibana:5601 \
+          -E setup.template.enabled=true \
+          -E logging.level=info
+      "
+    volumes:
+      - ./config:/config:ro
+    ports:
+      - "18200:8200"
+    networks:
+      - elastic
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana:
+        condition: service_healthy
 
   # 샘플 Node.js 애플리케이션 (APM Agent 포함)
   # sample-app:
