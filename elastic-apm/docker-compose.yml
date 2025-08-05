@@ -128,8 +128,7 @@ services:
       - SERVER_NAME=kibana
       - SERVER_SSL_ENABLED=false
       - SERVER_HOST=0.0.0.0
-      - xpack.security.enabled=true
-      - xpack.encryptedSavedObjects.encryptionKey=min-32-byte-long-strong-encryption-key
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=mcgAgWoNTiZlWULDW8vZuRlzFPKCb7X7 # you should replace this with a strong key
     ports:
       - "15601:5601"
     networks:
@@ -148,26 +147,39 @@ services:
       retries: 3
 
   apm-server:
-    image: docker.elastic.co/apm/apm-server:8.11.0
+    image: docker.elastic.co/apm/apm-server:8.18.0
     container_name: apm-server
     command: >
       sh -c "
         . /config/elastic_password.env
-        env
+        ELASTIC_PASSWORD=$${ELASTIC_PASSWORD} 
         echo $$ELASTIC_PASSWORD
 
-        # exec를 사용하여 현재 셸을 apm-server 프로세스로 대체합니다.
-        exec apm-server -e \
-          -E apm-server.rum.enabled=true \
-          -E apm-server.host=0.0.0.0:8200 \
-          -E output.elasticsearch.hosts='[\"elasticsearch:9200\"]' \
-          -E output.elasticsearch.username='elastic' \
-          -E output.elasticsearch.password='$${ELASTIC_PASSWORD}' \
-          -E apm-server.kibana.enabled=true \
-          -E apm-server.kibana.host=kibana:5601 \
-          -E setup.kibana.host=kibana:5601 \
-          -E setup.template.enabled=true \
-          -E logging.level=info
+        rm /usr/share/apm-server/apm-server.yml
+        touch /usr/share/apm-server/apm-server.yml
+
+        echo 'apm-server:' >> /usr/share/apm-server/apm-server.yml
+        echo '  host: \"0.0.0.0:8200\"' >> /usr/share/apm-server/apm-server.yml
+        echo '  auth:' >> /usr/share/apm-server/apm-server.yml
+        echo '    secret_token: \"q1w2e3r4\"' >> /usr/share/apm-server/apm-server.yml
+
+        echo 'output.elasticsearch:' >> /usr/share/apm-server/apm-server.yml
+        echo '  enabled: true' >> /usr/share/apm-server/apm-server.yml
+        echo '  hosts: [\"http://elasticsearch:9200\"]' >> /usr/share/apm-server/apm-server.yml
+        echo '  username: \"elastic\"' >> /usr/share/apm-server/apm-server.yml
+        echo \"  password: $$ELASTIC_PASSWORD\" >> /usr/share/apm-server/apm-server.yml
+
+        echo 'path:' >> /usr/share/apm-server/apm-server.yml
+        echo '  data: /usr/share/apm-server/data' >> /usr/share/apm-server/apm-server.yml
+        echo '  home: /usr/share/apm-server' >> /usr/share/apm-server/apm-server.yml
+        echo '  config: /usr/share/apm-server/config' >> /usr/share/apm-server/apm-server.yml
+        echo '  logs: /usr/share/apm-server/logs' >> /usr/share/apm-server/apm-server.yml
+
+        echo 'logging.level: info' >> /usr/share/apm-server/apm-server.yml
+
+        cat /usr/share/apm-server/apm-server.yml
+
+        exec apm-server -e
       "
     volumes:
       - ./config:/config:ro
@@ -181,24 +193,21 @@ services:
       kibana:
         condition: service_healthy
 
-  # 샘플 Node.js 애플리케이션 (APM Agent 포함)
-  # sample-app:
-  #   build:
-  #     context: ./sample-app
-  #     dockerfile: Dockerfile
-  #   container_name: sample-app
-  #   environment:
-  #     - ELASTIC_APM_SERVICE_NAME=sample-nodejs-app
-  #     - ELASTIC_APM_SERVER_URL=http://apm-server:8200
-  #     - ELASTIC_APM_ENVIRONMENT=development
-  #     - ELASTIC_APM_LOG_LEVEL=info
-  #   ports:
-  #     - "3000:3000"
-  #   networks:
-  #     - elk-network
-  #   depends_on:
-  #     apm-server:
-  #       condition: service_healthy
+  sample-app:
+    build:
+      context: ./sample-app
+      dockerfile: Dockerfile
+    container_name: sample-app
+    environment:
+    # Install necessary packages
+      - ELASTIC_APM_SERVICE_NAME=elastic-apm-sample-app
+      - ELASTIC_APM_SERVER_URL=http://apm-server:8200
+      - ELASTIC_APM_ENVIRONMENT=development
+      - ELASTIC_APM_SECRET_TOKEN=q1w2e3r4
+    ports:
+      - "8080:8080"
+    networks:
+      - elastic
 
 volumes:
   elasticsearch_data:
