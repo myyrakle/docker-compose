@@ -9,6 +9,8 @@ services:
       QDRANT__LOG_LEVEL: info
       QDRANT__CLUSTER__ENABLED: true
     command: "./qdrant --uri http://qdrant-node-1:6335"
+    networks:
+      - qdrant-network
 
   qdrant-node-2:
     image: qdrant/qdrant:v1.15.3
@@ -22,6 +24,8 @@ services:
       QDRANT__LOG_LEVEL: info
       QDRANT__CLUSTER__ENABLED: true
     command: "./qdrant --bootstrap http://qdrant-node-1:6335 --uri http://qdrant-node-2:6335"
+    networks:
+      - qdrant-network
 
   qdrant-node-3:
     image: qdrant/qdrant:v1.15.3
@@ -35,3 +39,9 @@ services:
       QDRANT__LOG_LEVEL: info
       QDRANT__CLUSTER__ENABLED: true
     command: "./qdrant --bootstrap http://qdrant-node-1:6335 --uri http://qdrant-node-3:6335"
+    networks:
+      - qdrant-network
+
+networks:
+  qdrant-network:
+    driver: bridge
